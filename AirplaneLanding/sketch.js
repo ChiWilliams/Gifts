@@ -5,7 +5,7 @@ let runwayX = WIDTH * 0.4;
 let runwayWidth = WIDTH * 0.5;
 let runwayY = HEIGHT - 65;
 
-let debug = true;
+let debug = false;
 
 const GameState = {
   FLYING: "FLYING",
@@ -120,14 +120,12 @@ class PlaneSketch {
           // Landing logic here
           point.y = runwayY;
           // this.verticalSpeed = 0;
-          this.speed = 0;
           return CollisionState.RUNWAY;
         }
       } 
   
       // Check water collision
         else if (point.y >= height - 50) {
-          this.speed = 0;
           return CollisionState.WATER;
         }
     }
@@ -136,13 +134,13 @@ class PlaneSketch {
   }
 
   checkRunwayConditions() {
-    const speedOK = this.speed < 5;
-    const rotationOK = Math.abs(this.rotation) < 0.3;
+    const speedOK = Math.abs(this.speed) < 5;
+    const rotationOK = Math.abs(this.rotation % Math.PI) < 0.3;
 
     if (debug) {
       console.log(`Landing conditions:
         Speed: ${this.speed.toFixed(2)} (${speedOK ? 'OK' : 'Too fast'})
-        Rotation: ${(this.rotation * 180 / Math.PI).toFixed(2)}° (${rotationOK ? 'OK' : 'Bad angle'})`);
+        Rotation: ${Math.abs(this.rotation % Math.PI) }° (${rotationOK ? 'OK' : 'Bad angle'})`);
     }
     return speedOK && rotationOK;
   }
