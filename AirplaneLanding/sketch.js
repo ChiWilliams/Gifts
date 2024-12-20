@@ -1,11 +1,141 @@
 let WIDTH = 800;
-let HEIGHT = 500;
+let HEIGHT = 600;
 
 let runwayX = WIDTH * 0.4;
 let runwayWidth = WIDTH * 0.5;
 let runwayY = HEIGHT - 65;
 
 let debug = false;
+
+const GameScreenState = {
+  START_SCREEN: "START_SCREEN",
+  PLAYING: "PLAYING",
+  WIN_SCREEN: "WIN_SCREEN",
+  CRASH_SCREEN: "CRASH_SCREEN",
+}
+
+class Game {
+  constructor () {
+    this.gameState = GameScreenState.START_SCREEN;
+    this.plane = null;
+    this.startTime = null;
+    this.elapsedTime = 0;
+  }
+
+  reset() {
+    this.plane = new PlaneSketch(200, 200, -0.1, 0);
+    this.startTime = millis();
+    this.elapsedTime = 0;
+  }
+
+  update() {
+    if (this.gameState === GameScreenState.PLAYING) {
+      this.plane.update();
+      this.elapsedTime = (millis() - this.startTime) / 1000;
+      
+      // Check for win/lose conditions
+      if (this.plane.gameState === GameState.LANDED) {
+        this.gameState = GameScreenState.WIN_SCREEN;
+      } else if (this.plane.gameState === GameState.CRASHED) {
+        this.gameState = GameScreenState.CRASH_SCREEN;
+      }
+    }
+  }
+
+  draw() {
+    switch (this.gameState) {
+      case GameScreenState.START_SCREEN:
+        this.drawStartScreen();
+        break;
+      case GameScreenState.PLAYING:
+        this.drawGame();
+        break;
+      case GameScreenState.WIN_SCREEN:
+        this.drawWinScreen();
+        break;
+      case GameScreenState.CRASH_SCREEN:
+        this.drawCrashScreen();
+        break;
+    }
+  }
+
+  drawStartScreen() {
+    background("#99d6f7");
+    textAlign(CENTER, CENTER);
+    textSize(48);
+    fill(0);
+    text("Plane Landing Game", WIDTH/2, HEIGHT/3);
+    textSize(24);
+    text("Press SPACE to start", WIDTH/2, HEIGHT/2);
+    text("Use W/S to control speed", WIDTH/2, HEIGHT/2 + 40);
+    text("Use A/D to rotate", WIDTH/2, HEIGHT/2 + 70);
+  }
+
+  drawGame() {
+    drawBackground();
+    this.plane.show();
+
+    textAlign(LEFT, TOP);
+    textSize(20);
+    fill(0);
+    text(`Time: ${this.elapsedTime.toFixed(1)}s`, 10, 10);
+  }
+
+  drawWinScreen() {
+    textAlign(CENTER, CENTER);
+    textSize(48);
+    fill(0);
+    text("Perfect Landing!", WIDTH/2, HEIGHT/3);
+    textSize(24);
+    text(`Time: ${this.elapsedTime.toFixed(1)} seconds`, WIDTH/2, HEIGHT/2);
+    text("Press SPACE to play again", WIDTH/2, HEIGHT*2/3);
+  }
+
+  drawCrashScreen() {
+    textAlign(CENTER, CENTER);
+    textSize(48);
+    fill(0);
+    text("Crash!", WIDTH/2, HEIGHT/3);
+    textSize(24);
+    text("Press SPACE to try again", WIDTH/2, HEIGHT/2);
+  }
+
+  handleKeyPress(key) {
+    if (key === ' ') {
+      console.log("In the if statement")
+      console.log(this.gameState)
+      if (this.gameState === GameScreenState.START_SCREEN ||
+          this.gameState === GameScreenState.WIN_SCREEN ||
+          this.gameState === GameScreenState.CRASH_SCREEN) {
+        this.gameState = GameScreenState.PLAYING;
+        console.log("in this statement")
+        this.reset();
+      }
+      return;
+    }
+
+    if (this.gameState === GameScreenState.PLAYING) {
+      switch (key.toLowerCase()) {
+        case 'w':
+          this.plane.speed += 0.5;
+          break;
+        case 's':
+          this.plane.speed -= 0.5;
+          break;
+        case 'a':
+          this.plane.rotation -= 0.1;
+          break;
+        case 'd':
+          this.plane.rotation += 0.1;
+          break;
+        case 't':
+          debug = !debug;
+          break;
+      }
+    }
+  }
+
+}
 
 const GameState = {
   FLYING: "FLYING",
@@ -52,7 +182,7 @@ class PlaneSketch {
     translate(this.x, this.y);
     rotate(this.rotation);
     textSize(50);
-    text("✈", -25, 17);
+    text("✈", -24, -23);
     pop();
 
 
@@ -171,16 +301,23 @@ function drawBackground() {
 
 let testPlane = new PlaneSketch(200,200,-0.1,1);
 
+let game; 
+
 function setup() {
   createCanvas(WIDTH, HEIGHT);
+  game = new Game();
 }
 
 function draw() {
-  drawBackground();
+  game.update();
+  game.draw();
+
+  
+  // drawBackground();
 
 
-  testPlane.show();
-  testPlane.update();
+  // testPlane.show();
+  // testPlane.update();
 
   // console.log(testPlane.gameState)
 
@@ -188,20 +325,5 @@ function draw() {
 }
 
 function keyPressed() {
-  switch (key.toLowerCase()) {
-    case 'w':
-      testPlane.speed += 0.5;
-      break;
-    case 's': 
-      testPlane.speed -= 0.5;
-      break;
-    case 'a':
-      testPlane.rotation -= 0.1;
-      break;
-    case 'd':
-      testPlane.rotation += 0.1;
-      break;
-    case 't':
-      debug = !debug;
-  }
+  game.handleKeyPress(key);
 }
