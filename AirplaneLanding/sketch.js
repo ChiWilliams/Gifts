@@ -5,6 +5,8 @@ let runwayX = WIDTH * 0.4;
 let runwayWidth = WIDTH * 0.5;
 let runwayY = HEIGHT - 65;
 
+let debug = true;
+
 const GameState = {
   FLYING: "FLYING",
   LANDED: "LANDED",
@@ -24,10 +26,25 @@ class PlaneSketch {
     this.rotation = rotation;
     this.speed = speed;
 
+    // this.points = this.createCollisionPoints();
 
     this.gameState = GameState.FLYING;
   }
 
+  get points() {
+    const noseX = this.x + 25 * Math.cos(this.rotation);
+    const noseY = this.y + 25 * Math.sin(this.rotation);
+    const leftWingX = this.x + 20 * Math.cos(this.rotation - Math.PI* 0.6);
+    const leftWingY = this.y + 20 * Math.sin(this.rotation - Math.PI * 0.6);
+    const rightWingX = this.x + 20 * Math.cos(this.rotation + Math.PI * 0.6);
+    const rightWingY = this.y + 20 * Math.sin(this.rotation + Math.PI * 0.6);
+
+    return [
+      {x: noseX, y: noseY},
+      {x: leftWingX, y: leftWingY},
+      {x: rightWingX, y: rightWingY}
+    ];
+  }
   show() {
     
     push();
@@ -38,10 +55,27 @@ class PlaneSketch {
     text("✈", -25, 17);
     pop();
 
-    push();
-    fill("red");
-    ellipse(this.x, this.y, 5, 5); // Show actual collision point
-    pop();
+
+    if (debug) {
+      push();
+      fill("red");
+      ellipse(this.x, this.y, 5, 5); // Show actual collision point
+      pop();
+    }
+
+        // Get the plane's collision points (nose and wings)
+        
+
+    if (debug) {
+      push();
+      fill('red');
+      const [ tip, leftWing, rightWing ] = this.points;
+      ellipse(tip.x, tip.y, 5, 5);
+      ellipse(leftWing.x, leftWing.y, 5, 5);
+      ellipse(rightWing.x, rightWing.y, 5, 5);
+      pop();
+    }
+
   }
 
   update() {
@@ -62,33 +96,55 @@ class PlaneSketch {
         }
     }
 
+
+  checkBounds() {
+    if (this.x < -10 || this.x > WIDTH + 10 ||
+      this.y < -10 || this.y > HEIGHT + 10) {
+        this.gameState = GameState.CRASHED;
+        return false;
+      }
+    return true;
+  }
+
   checkCollision() {
     //runway bounds:
-    // Check if plane is over runway
-    if (this.x >= runwayX && this.x <= runwayX + runwayWidth) {
-      if (this.y >= runwayY) {
-        // Landing logic here
-        this.y = runwayY;
-        // this.verticalSpeed = 0;
-        this.speed = 0;
-        return CollisionState.RUNWAY;
-      }
-    } 
 
-    // Check water collision
-      else if (this.y >= height - 50) {
-        console.log("Water");
-        this.speed = 0;
-        return CollisionState.WATER;
-      }
+    //check plane is in game:
+    if (!this.checkBounds()) {
+      return CollisionState.WATER; //out-of-bounds is water crash
+    }
+
+    for (const point of this.points) {
+      if (point.x >= runwayX && point.x <= runwayX + runwayWidth) {
+        if (point.y >= runwayY) {
+          // Landing logic here
+          point.y = runwayY;
+          // this.verticalSpeed = 0;
+          this.speed = 0;
+          return CollisionState.RUNWAY;
+        }
+      } 
+  
+      // Check water collision
+        else if (point.y >= height - 50) {
+          this.speed = 0;
+          return CollisionState.WATER;
+        }
+    }
+    // Check if plane is over runway
     return CollisionState.FLYING;
   }
 
   checkRunwayConditions() {
-    console.log("checking runway conditions");
-    console.log(this.rotation / Math.PI)
-    console.log(this.speed < 5 && Math.abs(this.rotation / Math.PI) < 0.2)
-    return this.speed < 5 && Math.abs(this.rotation / Math.PI) < 0.3;
+    const speedOK = this.speed < 5;
+    const rotationOK = Math.abs(this.rotation) < 0.3;
+
+    if (debug) {
+      console.log(`Landing conditions:
+        Speed: ${this.speed.toFixed(2)} (${speedOK ? 'OK' : 'Too fast'})
+        Rotation: ${(this.rotation * 180 / Math.PI).toFixed(2)}° (${rotationOK ? 'OK' : 'Bad angle'})`);
+    }
+    return speedOK && rotationOK;
   }
 }
 
@@ -124,7 +180,6 @@ function setup() {
 function draw() {
   drawBackground();
 
-  if testPlane.gameState
 
   testPlane.show();
   testPlane.update();
@@ -135,13 +190,20 @@ function draw() {
 }
 
 function keyPressed() {
-  if (key === 'w' || key === 'W') {
-    testPlane.speed += 0.5;
-  } else if (key === 's' || key === 'S') {
-    testPlane.speed -= 0.5;
-  } else if (key === 'a' || key === 'A') {
-    testPlane.rotation -= 0.1;
-  } else if (key === 'd' || key === 'D') {
-    testPlane.rotation += 0.1;
+  switch (key.toLowerCase()) {
+    case 'w':
+      testPlane.speed += 0.5;
+      break;
+    case 's': 
+      testPlane.speed -= 0.5;
+      break;
+    case 'a':
+      testPlane.rotation -= 0.1;
+      break;
+    case 'd':
+      testPlane.rotation += 0.1;
+      break;
+    case 't':
+      debug = !debug;
   }
 }
