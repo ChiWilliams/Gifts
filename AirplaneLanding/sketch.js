@@ -23,7 +23,7 @@ class Game {
   }
 
   reset() {
-    this.plane = new PlaneSketch(200, 200, -0.1, 0);
+    this.plane = new PlaneSketch(200, 200, -0.1, 1);
     this.startTime = millis();
     this.elapsedTime = 0;
   }
@@ -100,6 +100,22 @@ class Game {
     text("Press SPACE to try again", WIDTH/2, HEIGHT/2);
   }
 
+  handleKeyHold() {
+    if (keyIsDown(87)) {
+      console.log("does this work?")
+      this.plane.speed += 0.05
+    }
+    if (keyIsDown(83)) { // S
+      this.plane.speed -= 0.05
+    }
+    if (keyIsDown(68)) { // D
+      this.plane.rotation += 0.01
+    }
+    if (keyIsDown(65)) { // A
+      this.plane.rotation -= 0.01
+    }
+  }
+
   handleKeyPress(key) {
     if (key === ' ') {
       console.log("In the if statement")
@@ -116,18 +132,6 @@ class Game {
 
     if (this.gameState === GameScreenState.PLAYING) {
       switch (key.toLowerCase()) {
-        case 'w':
-          this.plane.speed += 0.5;
-          break;
-        case 's':
-          this.plane.speed -= 0.5;
-          break;
-        case 'a':
-          this.plane.rotation -= 0.1;
-          break;
-        case 'd':
-          this.plane.rotation += 0.1;
-          break;
         case 't':
           debug = !debug;
           break;
@@ -311,6 +315,8 @@ function setup() {
 function draw() {
   game.update();
   game.draw();
+  game.handleKeyHold()
+
 
   
   // drawBackground();
