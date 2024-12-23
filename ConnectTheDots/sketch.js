@@ -111,29 +111,98 @@ function draw() {
   }
 }
 
-function mousePressed() {
-  // Check if we're starting drag from current point
-  let d = dist(mouseX, mouseY, points[currentPoint].x, points[currentPoint].y);
+// First, create a pointer handler class to manage both mouse and touch events
+class PointerHandler {
+  constructor() {
+    this.isActive = false;
+    this.startPoint = null;
+    this.currentPoint = null;
+  }
+
+  start(x, y) {
+    this.isActive = true;
+    this.startPoint = { x, y };
+    this.currentPoint = { x, y };
+  }
+
+  move(x, y) {
+    if (this.isActive) {
+      this.currentPoint = { x, y };
+    }
+  }
+
+  end() {
+    this.isActive = false;
+    this.startPoint = null;
+    this.currentPoint = null;
+  }
+
+  getState() {
+    return {
+      isActive: this.isActive,
+      start: this.startPoint,
+      current: this.currentPoint
+    };
+  }
+}
+
+// Create the handler instance
+const pointerHandler = new PointerHandler();
+
+// Replace the existing mouse/touch event functions with these unified handlers
+function setup() {
+  createCanvas(800, 600);
+  textAlign(CENTER, CENTER);
+  textSize(16);
+  
+  // Use pointer events instead of mouse/touch events
+  canvas.addEventListener('pointerdown', handlePointerStart);
+  canvas.addEventListener('pointermove', handlePointerMove);
+  canvas.addEventListener('pointerup', handlePointerEnd);
+  canvas.addEventListener('pointercancel', handlePointerEnd);
+  
+  // Allow pinch-zoom and two-finger pan while preventing single-finger gestures
+  canvas.style.touchAction = 'manipulation';
+}
+
+function handlePointerStart(e) {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  
+  let d = dist(x, y, points[currentPoint].x, points[currentPoint].y);
   if (d < POINT_RADIUS) {
-    isDragging = true;
+    pointerHandler.start(x, y);
     dragStart = points[currentPoint];
-    dragEnd = {x: mouseX, y: mouseY};
+    dragEnd = {x, y};
+    isDragging = true;
   }
 }
 
-function mouseDragged() {
-  if (isDragging) {
-    dragEnd = {x: mouseX, y: mouseY};
+function handlePointerMove(e) {
+  e.preventDefault();
+  if (pointerHandler.getState().isActive) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    pointerHandler.move(x, y);
+    dragEnd = {x, y};
   }
 }
 
-function mouseReleased() {
-  if (isDragging) {
+function handlePointerEnd(e) {
+  e.preventDefault();
+  if (pointerHandler.getState().isActive) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
     if (currentPoint === points.length - 1) {
       // Check if we're connecting back to the first point
-      let d = dist(mouseX, mouseY, points[0].x, points[0].y);
+      let d = dist(x, y, points[0].x, points[0].y);
       if (d < POINT_RADIUS) {
-        // Complete the drawing
         completedLines.push({
           start: {...points[currentPoint]},
           end: {...points[0]}
@@ -142,9 +211,8 @@ function mouseReleased() {
       }
     } else {
       // Check if we ended on the next point
-      let d = dist(mouseX, mouseY, points[currentPoint + 1].x, points[currentPoint + 1].y);
+      let d = dist(x, y, points[currentPoint + 1].x, points[currentPoint + 1].y);
       if (d < POINT_RADIUS) {
-        // Successfully connected to next point
         completedLines.push({
           start: {...points[currentPoint]},
           end: {...points[currentPoint + 1]}
@@ -152,6 +220,8 @@ function mouseReleased() {
         currentPoint++;
       }
     }
+    
+    pointerHandler.end();
     isDragging = false;
     dragStart = null;
     dragEnd = null;
