@@ -161,8 +161,8 @@ function setup() {
   canvas.addEventListener('pointerup', handlePointerEnd);
   canvas.addEventListener('pointercancel', handlePointerEnd);
   
-  // Allow pinch-zoom and two-finger pan while preventing single-finger gestures
-  canvas.style.touchAction = 'manipulation';
+  // Prevent default touch behaviors
+  canvas.style.touchAction = 'none';
 }
 
 function handlePointerStart(e) {
@@ -208,6 +208,7 @@ function handlePointerEnd(e) {
           end: {...points[0]}
         });
         isDrawingComplete = true;
+        currentPoint++; // note will mean the currentPoint is out of bounds
       }
     } else {
       // Check if we ended on the next point
@@ -227,3 +228,7 @@ function handlePointerEnd(e) {
     dragEnd = null;
   }
 }
+
+// Remove the original mouse and touch event functions
+// mousePressed, mouseDragged, mouseReleased
+// touchStarted, touchMoved, touchEnded
